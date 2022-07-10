@@ -74,3 +74,38 @@
         * The optimizer handles both *relational operations* required for query resolution, usually represented as dependency tree and *optimizations* such as index ordering, cardinality estimation, and choosing access methods.
     * The query is usually represented in the form of an execution plan (or query plan): a sequence of operations that have to be carried out for it results to be considered complete.
     * Since the same query can be satisfied using different execution plans that can vary in efficiency, the optimizer picks the best available plan.
+
+* *Execution Engine*
+    * It handles the execution plan by collecting the results of the execution of local and remote operations.
+    * Remote execution can involve writing and reading data to and from other nodes in the cluster, and replication.
+
+* *Storage Engine*
+    * Local queries (coming directly from clients or from other nodes) are executed by the storage engine. Components:
+    
+    * *Transaction Manager*
+        * It schedules transactions and ensures they cannot leave database in a logically inconsistent state.
+
+    * *Lock Manager*
+        * It locks on the database objects for the running transactions, ensuring that concurrent operations do not violate physical data integrity.
+
+    * *Access methods (storage structures)*
+        * These manage access and organizing data on disk.
+        * Includes heap files and storage structures such as B-trees or LSM trees.
+
+    * *Buffer Manager*
+        * It caches data pages in memory.
+
+    * *Recovery Manager*
+        * It maintains the operation log and restoring the system state in case of a failure.
+
+    * Together, transaction and lock manager are responsible for concurrency control. They ensure logical and physical data integrity while ensuring that concurrent operations are executed as efficiently as possible.
+
+**Memory v/s Disk-Based DBMS**
+* In-memory DBMS store data primarily in memory and use the disk for recovery and logging.
+* Disk-based DBMS hold most of the data on disk and use memory for caching disk contents or as a temporary storage.
+* Main memory database differ from disk-based not only in primary storage, but also in which data structures, organization, optimization techniques they use.
+* Programming for main memory is significantly simpler than doing for the disk. *Operationg systems abstract memory management* and allow us to think in terms of allocating and freeing arbitrarily sized memory chunks.
+* On disk we have to manage *data references, serialization formats, freed memory, and fragmentation manually*.
+
+* Main limiting factors on the growth of in-memory databases are RAM volatility (or lack of durability) & costs. Since RAM contents are not persistent, software errors, crashes, hardware failures, and power outages can result in data loss.
+* The situation is likely to change with NVM (non-volatile memory). 
