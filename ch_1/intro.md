@@ -109,3 +109,19 @@
 
 * Main limiting factors on the growth of in-memory databases are RAM volatility (or lack of durability) & costs. Since RAM contents are not persistent, software errors, crashes, hardware failures, and power outages can result in data loss.
 * The situation is likely to change with NVM (non-volatile memory). 
+
+**Durability in Memory-based Stores**
+* Before the operation can be considered complete, its results have to be written in a sequential log file.
+* To avoid replaying complete log contents during startup or after a crash, in-memory stores maintain a *backup copy*.
+* The backup copy is maintained as a *sorted disk-based structure*, and modifications to this structure are often async (decoupled from client requests) and applied in *batches to reduce the no. of I/O operations*.
+
+* During recovery, database contents can be restored from the backup and logs.
+* Backup holds a database snapshot for a specific point in time and log contents up to this point can be discarded. This process is called *checkpointing*.
+
+* *Note*: In memory-DB are not the equivalent of on-disk DB with a huge page cache. Even though pages are cached in memory, *serialization format and data layout incur additional overhead* and do not give the same degree of optimizations as in-memory stores.
+
+* Disk-based databases use specialized storage structures, optimized for disk access.
+* Random memory access is significantly faster than random disk access.
+* Disk-based storage structures often have a form of wide and short trees.
+* Memory-based implementations can choose from a larger pool of data structures and choose optimizations that would otherwise be impossible or difficult to implement on disk.
+* Handling variable-size data on disk requires special attention, while in memory it's often a matter of refrencing value with a pointer.
