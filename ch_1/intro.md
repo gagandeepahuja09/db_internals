@@ -125,3 +125,46 @@
 * Disk-based storage structures often have a form of wide and short trees.
 * Memory-based implementations can choose from a larger pool of data structures and choose optimizations that would otherwise be impossible or difficult to implement on disk.
 * Handling variable-size data on disk requires special attention, while in memory it's often a matter of refrencing value with a pointer.
+
+**Column v/s Row-Oriented DBMS**
+
+**Row-oriented layout**
+* Because data on a persistent medium such as a disk is typically accessed block-wise (block is the minimal unit of disk access), a single block will contain data for all columns. Great for use cases where would like to access an entire user record.
+
+**Column-oriented layout** 
+* To reconstruct data tuples for joins, filtering, multirow aggregations, we need to preserve some metadata on the column level to identify which data points from other columns it is associated with.
+* If we do this explicitly, each value will have to hold a key, which introduces duplication and increases the amount of data.
+* Some column stores use implicit identifiers (virtual IDs) instead and use the position of the value (offset) to map it back to the related values.
+
+**Distinctions and Optimizations**
+* Reading multiple values for the same column in one run significantly improves cache utilization and computational efficiency.
+* Storing values that have the same data type together offers a better compression ratio.
+
+**Wide Column Stores**
+* Eg. BigTable, HBase. Data is represented as multi-dimensional map.
+* Columns are grouped into column families (usually storing data of same type).
+* Inside each column, data is stored row-wise.
+* This layout is best for storing data retrieved by a key or a sequence of keys.
+* Each row is indexed by its row key.
+* Related columns are grouped together in column-families which are stored on disk separately. Data belonging to the same key is stored together in a column family.
+* Each column in a column family is identified by the column key, which is a combination of the column family name and qualifier (html, abc.com, zyx.com)
+* WebTable example
+
+{
+    "com.cnn.www": {
+        "contents": {
+            t1: html: "<html>..."
+            t2: html: "<html>..."
+        }
+        "anchor": {
+            t8: html: "<html>..."
+            t9: html: "<html>..."
+        }
+    }
+    "com.example.www": {
+        "contents": {
+            t7: html: "<html>..."
+        }
+        "anchor": {}
+    }
+}
