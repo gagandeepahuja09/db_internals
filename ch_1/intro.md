@@ -175,9 +175,9 @@
 * *Storage efficiency*:
     * Files are organized in a way that *minimizes storage overhead per stored data record*.
 * *Access efficiency*:
-    * Records can be located in the smallest possible no. of steps.
+    * Records can be *located in the smallest possible no. of steps*.
 * *Update efficiency*:
-    * Record updates are performed in such a way that minimizes the no. of changes on disk.
+    * Record updates are performed in such a way that *minimizes the no. of changes on disk*.
 
 * Each table is usually represented as a separate file.
 * Each record can be looked up using a search key.
@@ -209,3 +209,38 @@
 * *Index organized tables*:
     * Storing data records in the index itself. This allows us to reduce the no. of disk seeks by atleast one, since after traversing the index and locating the searched key, we don't have to address a separate file to find the associated data record.
     * Records are sorted by key, which helps speed up range queries as we can sequentially scan the contents.
+
+**Index files**
+* Secondary index can point directly to the data record or simply store its primary key.
+* While primary index files hold a unique entry per search key, secondary indexes may hold several entries per search key.
+* With a clustered index, the rows are stored in the same order as the index. Due to this, there can only be one clustered index, ie the primary index. Hence, for range queries and various other options, it could be a better option to change the primary index if possible, rather than creating a secondary index.
+* Index-organized tables store information in index order and are clustered by definition.
+
+**Primary Index as an Indirection**
+* There are varying opinions in the db community on whether data records should be referenced directly or via the primary key index.
+
+* By referencing the data directly, we can reduce the no. of disk seeks but have to pay a cost of updating the pointers whenever the record is updated.
+
+* For write-heavy workloads, using primary key as an indirection can be a good option as we need not update the pointers to secondary indexes. Eg. done by InnoDB.
+
+* Hybrid approach: We store both data files and primary keys. If the position has changed, we pay the extra cost of going through primary key and updating the index file after finding the new offset.
+
+**Buffering, Immutability and Ordering**
+* Storage structures have the above 3 common variables.
+
+* *Buffering*
+    * This defines whether the storage structure chooses to collect a certain amount of data in more before putting it on disk. ( we are taking about Avoidable buffering )
+    * Unavoidable buffering: Every on-disk structure has to use buffering to some degree, since the smallest unit of data transfer to and from disk is a block and it is desirable to write full blocks.
+    * Optimization examples:
+        * Lazy B-trees: Adding in-memory buffers to B-tree nodes to ammortize I/O costs.
+        * Two-component LSM trees.
+
+* *Immutability*
+    * Common immutable ways:
+        * Append-only: Modifications are appended to the end of the file.
+        * Copy-on-write: Modified page, holding the updated version of the record, is written to the new location in the file instead of its original location.
+    * Often, the distinction b/w LSM, B-tree is though as immutability, but there are structures like B-w trees whihc are inspired by B-trees and are immutable.
+
+* *Ordering*
+    * Ordering defines whether or not we can effeciently scan a range of records, not only locate the individual data records.
+    * Insertion order --> write time optimization.
