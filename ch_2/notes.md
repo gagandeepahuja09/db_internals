@@ -36,5 +36,41 @@
 * They *don't have moving parts*. There is no disk that spins or head that has to be positioned for the read.
 
 * A typical SSD is built of memory cells, connected into strings (32-64 cells per string).
-* Strings are combined into arrays, arrays are combined into pages and pages are combined into blocks.
-* *Smallest unit* that can be written or read is a *page*.
+* Strings are combined into arrays, arrays are combined into pages and pages are combined into blocks. Memory cells -> strings -> array -> pages -> blocks -> planes -> die.
+* SSDs can have one or more dies.
+* *Smallest unit* that can be *written or read* is a *page*.
+* *Smallest erase entity* is a *block* that holds multiple pages.
+
+* Size of page => 2 - 16 kB.
+* Blocks contain 64 - 512 pages.
+
+* *Flash Translation Layer*
+    * It is part of a flash memory controller responsible for mapping page IDs to their physical locations. It also maps empty, written and discarded pages.
+    * It is also responsible for garbage collection during which it finds blocks it can safely erase. Some blocks might contain live pages, in which case it relocates live pages from these blocks to new locations and remaps page IDs to point there.
+
+* In SSDs, the difference in sequential and random reads is not substantial.
+
+* Since in both device types (HDDs and SSDs), we are addressing chunks of memory rather than individual bytes (accessing data block-wise), most OS have a *block device* abstraction.
+    * It hides an internal disk structure and buffers I/O operations internally, so when we're reading a *single word* from a block, the *whole block* containing it is read.
+
+* Writing only full blocks and combining subsequent writes to the same block can help reduce the no. of required I/O operations.
+
+**On-Disk structures**
+* Besides the cost of disk access itself, the main limitation and design condition for building efficient on-disk structures is that the smallest unit of disk operation is a block.
+
+* Pointers have slightly different semantics for on-disk structures. On disk, most of the time we manage the data layout manually. We have to compute the target pointer addresses and follow the pointers explicitly.
+
+* Creating long dependency chains in on-disk structures greatly increases code and structure complexity. So, we should keep the no. of pointers and their span to a minimum.
+
+* B-Trees combine these ideas:
+    1. Increase node fanout.
+    2. Reduce tree height.
+    3. Reduce the no. of node pointers.
+    4. Reduce the frequency of balancing operations.
+
+**Ubiqutous B-trees**
+* B-trees are sorted. Keys inside the B-tree nodes are sorted in order.
+* Because of that, to locate a searched key, we can use an algorithm like binary search.
+* This implies that lookup in B-trees have logarithmic complexity. Find a searched key among 2 billion items takes about 32 operations.
+* If we had to make a disk seek for each one of these comparisons, it would significantly slow us down, but since B-tree nodes store dozens or even hundreds of items, we only have to make one disk seek per level jump.
+* Using B-trees, we can efficiently execute both point and range queries.
