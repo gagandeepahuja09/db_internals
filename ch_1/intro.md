@@ -168,3 +168,44 @@
         "anchor": {}
     }
 }
+
+**Data Files And Index Files**
+* How does file organization improve efficiency?
+
+* *Storage efficiency*:
+    * Files are organized in a way that *minimizes storage overhead per stored data record*.
+* *Access efficiency*:
+    * Records can be located in the smallest possible no. of steps.
+* *Update efficiency*:
+    * Record updates are performed in such a way that minimizes the no. of changes on disk.
+
+* Each table is usually represented as a separate file.
+* Each record can be looked up using a search key.
+* To locate a record, DBs use indexes: avoiding entire table scan.
+
+* Files are partitioned into pages, having size of single or multiple disk blocks.
+* Pages can organized as sequence of blocks or as slotted pages.
+
+* New record (insertions) and updates to the existing records are represented by key/value pair.
+* Most newer DBs use garbage collection for deletion. 
+    * Reads the pages, writes the live records to new place and discards the old ones.
+
+**Data files**
+* Data files can be organized as: 
+    * Index-organized tables(IOT)
+    * Heap files
+    * Hash files
+
+* *Heap Files*:
+    * Records are not required to follow any order. Most of the time it is write order.
+    * No additional work or file reorganization is required when new pages are appended.
+    * The require additional index structures pointing to the location where data records are stored, to make them searchable.
+
+* *Hashed Files*:
+    * Records are stored in buckets.
+    * Hash value of the key determines which bucket a record belongs to.
+    * Records in a bucket can be sorted in an append order or by key.
+
+* *Index organized tables*:
+    * Storing data records in the index itself. This allows us to reduce the no. of disk seeks by atleast one, since after traversing the index and locating the searched key, we don't have to address a separate file to find the associated data record.
+    * Records are sorted by key, which helps speed up range queries as we can sequentially scan the contents.
