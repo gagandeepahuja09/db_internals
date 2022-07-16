@@ -74,3 +74,39 @@
 * This implies that lookup in B-trees have logarithmic complexity. Find a searched key among 2 billion items takes about 32 operations.
 * If we had to make a disk seek for each one of these comparisons, it would significantly slow us down, but since B-tree nodes store dozens or even hundreds of items, we only have to make one disk seek per level jump.
 * Using B-trees, we can efficiently execute both point and range queries.
+
+**B-Tree Hierarchy**
+* Since B-trees are a page organization technique (they are used to navigate and organize fixed-size pages), we often use the terms node and page interchangably.
+* *Occupancy*: The relation b/w node capacity and the no. of keys it actually holds.
+
+* Higher fanout helps to 
+    * Ammortize the cost of structural changes required to keep the tree balanced.
+    * Reduce the no. of seeks by storing keys and pointers to child nodes in a single block or multiple consecutive blocks. (Locality)
+* Balancing operations (splits and merges) are triggered when the nodes are full or nearly empty.
+
+**Separator Keys**
+* They split the tree into subtrees holding the corresponding key ranges.
+* Some B-tree variants also have sibling node pointers, most often the leaf level to simplify range scans. Some implementations have pointers in both dirs, forming a DLL in the leaf level, which makes the reverse iteration possible.
+
+* Unlike BSTs, which are built from top to bottom, they're constructed from bottom to top. The no. of leaf nodes grows, which increases the no. of internal nodes and tree height.
+
+* Since B-Trees reserve extra space inside nodes for future reference and updates, tree utilization can get as low as 50% but is usually considerably higher.
+* Higher occupancy does not influence B-tree performance negatively.
+
+**B-tree Lookup Complexity**
+* It can be viewed from 2 standpoints:
+    * No. of block transfers during the lookup.
+    * No. of comparisons done during the lookup.
+
+* *No. of block transfers*
+    * The logarithm base is N (number of keys per node). 
+
+* *No. of comparisons*
+    * The logarithm base is 2. Searching a key inside a node is done using binary search.
+
+**B-tree Lookup Algorithm**
+* The objective of the search is to find the searched query or its predecessor.
+* Finding an exact match is used for point queries, updates and deletions.
+* Finding its predecessor is useful for range queries and insertions.
+
+**B-tree Node Splits**
