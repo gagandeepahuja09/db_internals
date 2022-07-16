@@ -110,3 +110,29 @@
 * Finding its predecessor is useful for range queries and insertions.
 
 **B-tree Node Splits**
+* During insertion, if the target node doesn't have enough room available, we say that the node has overflowed and has to be split into 2 to fit the new data.
+* Splits are done by:
+    1. Allocating a new node.
+    2. Copy half the elements from the splitting node to the new node.
+    3. Place the new element on the corresponding node.
+    4. At the parent of the split node, add a separator key and a pointer to the new node.
+
+* If the parent node is full and does not have space available for the promoted key and pointer, it has to be split as well.
+* The above operation might propagate recursively all the way up to the root. In which case, the tree has reached its capacity and the root node is split.
+* When the root node is split, a new root node holding a split point key is allocated.  
+* The tree height changes when the root node is split. On the leaf and internal node levels, the tree only grows horizontally.
+
+**B-Tree Node Merges**
+* Node merges are generally done during deletions.
+* It is done when: If a node can hold upto N key-value pairs (or N + 1 pointers) and combined no. of key-value pairs in 2 neighboring nodes <= N.
+
+* 2 underflow scenarios:
+    * If 2 adjacent nodes have a common parent and their contents fit into a single node, their contents should be merged.
+    * If their contents don't fit in a single node, keys are redistributed between them to restore balance.
+* Generally elements from the right sibling are moved to the left one, but it can be done the other way around as long as the key order is preserved.
+* Just as with splits, merges can propagate all the way to the root level since it involves the deletion of the parent pointer.
+
+* To summarize:
+    1. Copy all elements from the right node to the left node.
+    2. Remove the right node pointer from the parent (or demote it, in case of a non-leaf merge. See the diagram on how the parent key is demoted).
+    3. Remove the right node.
