@@ -120,3 +120,38 @@
     1. *Minimal overhead*: The only overhead is the pointer array.
     2. *Space reclamation*: Space can be reclaimed by defragmenting and rewriting the page.
     3. *Dynamic Layout*: From outside the page, slots are referenced only by their IDs, so the exact location is internal to the page.
+
+**Cell Layout**
+* Key cells and Key-value cells.
+* All cells within a page are uniform. Eg: all cells can hold either just keys or both keys and values. Similarly all cells can hold either fixed-size of variable-size data but not a mix of both.
+* This means we can store metadata describing cells once on the page level, instead of duplicating in every cell.
+
+* To compose a key cell, we need to know:
+    * Cell type (can be inferred from the page metadata)
+    * Key size
+    * ID of the child page this cell is pointing to
+    * Key bytes
+
+* A variable-size key cell layout looks like this (a fixed-one would have no specifier on the cell level):
+
+`
+    0               4               8
+    [int]key_size   [int]page_id    [bytes]key
+`
+
+* We can group fixed-size data fields together at the start, since all fixed-size fields can be accessed by using static, precomputed offsets, and we need to calculate offsets only for the variable-size data.
+
+* Key-value cells:
+    * Cell type (can be inferred from page metadata)
+    * Key size
+    * Value size
+    * Key bytes
+    * Data record bytes
+
+* Distinction between *offset and page ID*. 
+    * Since pages have a fixed size and are managed by the *page cache*, we only need to store the page ID, which is later translated to the actual offset in the file using the lookup table.
+    * Cell offsets are page-local and relative to the page start offset.
+
+**Combining Cells into Slotted Pages**
+* Keys can be inserted out of order and their logical sorted order is kept by sorting cell offset pointers in key order.
+* This allows appending cells to the page with minimal effort, since cells don't have to be relocated during insert, update or delete operations.
