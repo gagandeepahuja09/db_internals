@@ -63,3 +63,60 @@
 
 **Bit-Packed Data: Booleans, Enums and Flags**
 * Using an entire byte a boolean's representation could be useful. Developers often batch boolean values in groups of 8 to solve this problem.
+
+**General Principles**
+* Most in-place update storage structures use pages of the same size, since it significantly simplifies read and write access.
+* Append-only storage structures often write data page-wise too: records are appended one after the other and as soon as the page fills up in memory, it is flushed on disk.
+
+* The file usually starts with a fixed-size header and may end with a fixed-size trailer.
+* They hold auxiliary information that should be accessed quickly or is required for decoding the rest of the file.
+* The rest of the file is split into pages.
+
+* Many data stores have a fixed schema, specifying the number, order and type of fields the table can hold. Having a fixed schema allows to reduce the disk space. Instead of repeatedly writing field names, we can use their positional identifier.
+
+* We could store the fixed-size fields in the head of the structure followed by the variable-size ones.
+
+`
+    Fixed-size fields:
+    (4 bytes) employee_id
+    (4 bytes) tax_number
+    (2 bytes) first_name_length
+    (2 bytes) last_name_length
+
+    Variable-size fields:
+    (first_name_length bytes) first_name
+    (last_name_length bytes) last_name
+`
+
+* To access first_name, we can slice first_name_length after the fixed sized area.
+* We can locate last_name by checking the size of the variable size fields that precede it.
+* To avoid calculations involving multiple fields, we can encode both offset and length to the fixed-size areas.
+
+**Page Structure**
+* Size of multiple file system blocks. 4-16 kB.
+* From a structure perspective, we distinguish b/w the leaf nodes that hold keys and data record pairs, and non leaf nodes that hold keys and pointers to other nodes.
+
+* Each B-Tree node occupies one page or multiple pages linked together. So, in context of B-trees the term node and page are used interchangably.
+
+* Page organization:
+    p0 | k1 | v1 | p1 | k2 | v2 | .... | pn | kn | vn | ...unused
+
+* Downsides of above approach:
+    1. Appending a key anywhere but the right side requires relocating elements.
+    2. It doesn't allow managing or accessing variable-size records efficiently and works only for fixed-size data.
+
+**Slotted Pages**
+* When storing *variable-size records*, the main problem is *free-space management*: reclaiming the space occupied by removed records.
+* If we attempt a put a record of size n into the space previously occupied by a record of size m, unless m == n or we find another record of size m - n, the space will remain unused.
+
+* To simplify space management for variable-size records, we can split the page into fixed-size segments. However, we end up wasting space with that too. Eg: segment size of 64 bytes, unless record size is a multiple of 64, we wast 64 - (n%64) bytes.
+
+* To efficiently store variable-size records such as strings, binary large objects (BLOBs), etc we can use slotted pages as an organization technique. This approach is used by many databases. Eg: PostgreSQL.
+
+* We organize the page into a collection of cells and split out the pointers and cells into 2 independent memory regions residing on different sides of the page.
+* This means that we only need to reorganize the pointers pointers addressing the cells and deleting a cell can be done by nullifying the pointer or removing it.
+
+* Advantages of slotted pages:
+    1. *Minimal overhead*: The only overhead is the pointer array.
+    2. *Space reclamation*: Space can be reclaimed by defragmenting and rewriting the page.
+    3. *Dynamic Layout*: From outside the page, slots are referenced only by their IDs, so the exact location is internal to the page.
