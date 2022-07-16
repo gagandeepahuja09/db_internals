@@ -155,3 +155,55 @@
 **Combining Cells into Slotted Pages**
 * Keys can be inserted out of order and their logical sorted order is kept by sorting cell offset pointers in key order.
 * This allows appending cells to the page with minimal effort, since cells don't have to be relocated during insert, update or delete operations.
+
+**Managing Variable-Size Data**
+* Removing an item from the page does not have to remove the actual cells and shift other cells to reoccupy the freed space.
+* Instead it can be marked free and an in-memory list can be updated with the amount of free memory and a pointer to the freed value.
+
+* SQLite calls unoccupied segments freeblocks.
+    * It stores a pointer to the first freeblock in the page header.
+    * It also stores total no. of available bytes within the page to quickly check if we can fit a new element into the page after defragmenting it.
+
+* Fit strategies: *First fit, Best fit*
+
+* If we cannot find enough consecutive bytes to fit the cell but there are enough fragmented bytes available, live cells are read and rewritten, defragmenting the page and reclaiming space for new writes.
+* If there's not enough free space, even after defragmentation, we have to create an overflow page.
+
+**Versioning**
+* Most of the time, any storage engine has to support more than one serialization format. Eg. current and one or more legacy formats for backward compatibility.
+* To support that, we have to be able to find out which version of the file are we up against.
+
+* Can be done in many ways:
+    * Apache Cassandra: version prefixes in filenames.
+    * Postgres stores the version in the PG_VERSION file.
+
+* The version can also be stored directly in the index file header. In this case, a part of the header has to be encoded in a format that does not change between versions.
+
+* After finding out which version the file is encoded with, we can create a version specific reader to interpret the contents.
+* Some file formats find the version number using magic numbers.
+
+**Checksumming**
+* Files on disk may get damaged by software bugs and hardware failures.
+* To identify these problems *preemptively* and *avoid propagating corrupt data* to other *subsystems* or even *nodes*, we can use *checksums and cyclic redundancy checks*.
+
+**Important Note**
+* Noncryptographic hashes and CRCs should not be used to verify whether or not the data has been tampered with.
+* For this, we should always use strong cryptographic hashes designed for security.
+* The main goal of CRC is to ensure that there were no unintended and accidental changes in data. 
+* It is not designed to resist attacks and intentional changes in data.
+
+* *Checksums* provide the weakest form of guarantee and aren't able to detect corruption in multiple bits.
+* They are usually computed by using XOR with parity checks or summation.
+
+* *CRCs* can help detect burst errors. (when multiple consecutive bits get corrupted).
+* Their implementations usually use lookup tables and polynomial division.
+* Multibit errors are crucial to detect, since a significant percentage of failures in communication networks and storage devices manifest this way.
+
+* *Process*
+    * Before writing the data on disk, we compute its checksum and write it together with the data.
+    * When reading it back, we compute the checksum again. 
+    * If there's a mismatch, we know that the corruption has occurred and we should not use the data we read.
+
+* Page checksums are usually computed on pages and placed in the page header.
+* Since they are performed on a small subset of data, they are more robust.
+* Whole file doesn't have to be discarded if corruption is contained in a single page.
