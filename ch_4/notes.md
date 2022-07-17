@@ -71,3 +71,32 @@
 * This helps to improve the *node occupancy* and may reduce the *no. of levels* within a tree at a potentially higher *maintainence cost of rebalancing*.
 
 * Since balancing changes the min/max invariant of the sibling nodes, we have to update keys and pointers to the parent node to preserve it.
+
+**Right-Only Appends**
+* Many DBs use auto-incremented monotonically increasing values as primary index keys.
+* This opens up an optimization as all the insertions are happening at the end of the index (the righmost leaf).
+* Most of the splits occur at the rightmost node at each level in this case.
+
+* *PostgreSQL fastpath*
+    * When the inserted key > the first key in the rightmost page, and the rightmost page has enough space to hold the newly inserted key, it is inserted into the appropriate location in the *cached rigtmost leaf*, and the whole read path can be skipped.
+
+* *SQLite quickbalance*
+    * When the entry is inserted on the far right end and the target node is full, instead of rebalancing or splitting the node, it allocates the new rightmost node and adds its pointer to the parent.
+    * Even though this leaves the newly created page nearly empty (instead of half empty), it is very likely that the node will get filled up shortly.
+
+**Bulk Loading**
+
+**Compression**
+
+**Vaccum And Maintenance**
+* Background processes that happen in parallel that: 
+    * *maintain storage integrity*
+    * *reclaim space*
+    * *reduce overhead*
+    * *keep pages in order*
+
+* The design of slotted pages requires good maintainence to ensure that the pages are in good shape. Eg. enough logical space but does not have enough continguous space, since it is fragmented.
+* Zero-filling of garbage data is skipped as they are eventually overwritten anyway.
+
+**Fragmentation Caused By Updates And Deletes**
+* Mostly happens in case of deletes.
