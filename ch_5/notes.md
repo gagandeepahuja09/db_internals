@@ -136,3 +136,40 @@
     * The last_checkpoint pointer stored in the log header contains the information about the last successful checkpoint.
     * A fuzzy checkpoint begins with a special begin_checkpoint log specifying its start and ends with end_checkpoint log record, containing information about the dirty pages and the contents of a transaction table.
     * Pages are flushed asynchronously and once this is done, the last_checkpoint record is updated with the LSN of the begin_checkpoint record and in case of a crash, the recovery process will start from there.
+
+**Operation Vs Data Log**
+* Some database systems use *shadow paging*: a *copy-on-write* technique ensuring data *durability* and transaction *atomicity*.
+* New contents are placed into the new unpublished shadow page and made visible with a pointer flip, from the old page to the one holding new contents.
+* Physical logging stores before and after images, requiring entire pages affected by this operation to be logged. A logical log specifies which operations have to be applied to the page. 
+* In practice, many DBs used a combination of the above 2 approaches, using logical logging to perform an undo (for concurrency and performance) and physical logging to perform a redo (to improve recovery time).
+
+**Steal and Force Policies**
+* To determine when the changes made in memory have to be flushed on disk, DBs define steal/no-steal and force/no-force policies.
+* *Steal policy*: A recovery method that allows flushing a page modified by the transaction even before the transaction has committed.
+* *Force policy*: It requires all pages modified by the transactions to be flushed on disk before the transaction commits.
+
+* Steal and force policies are important to understand since they have implications for transaction undo and redo.
+
+* *Pros of cons of these:*
+    * Using the *no-steal* policy allows implementing *recovery only using redo entries*: old copy is contained in the page on disk and modification is stored in the log.
+    * With *no-force*, we potentially can buffer several updates to pages by *deferring* them. Since page contents have to be cached in memory for that time, a larger page cache may be required.
+    * When force policy is used, crash recovery doesn't need any additional work to reconstruct the results of committed transactions, since pages modified by these transactions are already flushed.
+        * A major drawback of this is that transactions take longer to commit due to the necessary I/O.
+
+**ARIES**
+* It is a steal/no-force recovery algorithm.
+* It uses physical redo to improve performance during recovery (since changes can be installed quicker).
+* It uses logical undo to improve concurrency during normal operation (since logical undo operations can be applied to pages independently).
+
+* When the DB system restarts after the crash, recovery proceeds in 3 phases:
+    1. The *analysis* phase identifies *dirty pages* and *in-progress* transactions at the *time of crash*.
+        * Information about dirty pages is used to identify the starting point for the redo phase.
+        * In progress transactions info is required in undo phase to roll back incomplete transactions.
+    2. The *redo* phase repeats the history up to the point of a crash and restores the DB to the previous state.
+        * This phase is done for incomplete transactions as well as the ones that were committed but whose contents weren't flushed to persistent storage.
+    3. The *undo* phase rolls back all incomplete transactions and restores the DB to the last consistent state.
+        * All operations are rolled back in reverse chronological order.
+        * In case the DB crashes again during recovery, operations that undo transactions are logged as well to avoid repeating them.
+
+* ARIES use LSNs for identifying log records, tracks pages modified by running transactions in the dirty page table, and uses physical redo, logical redo and fuzzy checkpointing.
+
