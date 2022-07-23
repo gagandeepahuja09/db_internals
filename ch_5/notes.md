@@ -95,3 +95,44 @@
 * It can be instructed to load pages ahead of time before they are accessed. Eg. when the leaf nodes are traversed in a page scan, the next leaves can be preloaded.
 
 * Similarly if a maintenance process loads the page, it can be immediately evicted after the process finishes, since it's unlikely to be useful for in-flight queries. Eg. PostgrSQL uses a circular buffer (FIFO page replacement policy) for large sequential scans.
+
+**Page Replacement**
+* The choice of a page replacement algorithm has a significant impact on latency and the no. of performed I/O operations.
+* *Belady's anomaly*: Increasing the no. of pages might inc. the no. of evictions if the used page algorithm is not optimal.
+
+**FIFO and LRU**
+* *FIFO*
+    * Since it does not account for subsequent page accesses, only for page-in events, this proves to be impractical for most real-world systems. 
+    * Eg. root and topmost-level pages are paged in first and are first candidates for eviction.
+* *LRU*
+    * Used again: Move to the tail of the queue.
+    * *Updating references and relinking nodes can become expensive in a concurrent environment*.
+* *2Q*
+    * Puts pages into the first queue during the initial access and moves them to the 2nd hot queue on subsequent accesses.
+    * This allows to distinguish between the frequently accessed and recently accessed pages.
+* *LRU-K*
+    * Identifies frequently referenced pages by keeping track of the last K accesses.
+
+**CLOCK**
+* In some situations, efficiency may be more important that precision.
+
+**LFU**
+
+**Recovery**
+* A WAL is an append-only auxiliary disk-resident structure used for crash and transaction recovery.
+* ARIES (Algorithm for Recovery and Isolation Exploiting Semantics).
+
+**Log Semantics**
+* The WAL consists of log records.
+* Each log has a unique, monotonically increasing LSN (log sequence number, rep by internal counter or timestamp).
+* Since log records do not necessarily occupy an entire disk block, their contents are cached in the *log buffer* and are flushed to the disk in a *force* operation.
+* Forces happen as the log buffer fills up, and can be requested by the transaction manager or a page cache.
+
+* Checkpoints are a way to know that log records upto a certain mark are fully persisted and aren't required anymore.
+* *Sync checkpoint*: A process that forces all dirty pages to be flushed on disk .It fully synchronizes the primary storage structure.
+
+* *Fuzzy checkpoints*
+    * Flushing the entire contents on disk is impractical and would require pausing all running operations until the checkpoint is done, so most databases implement fuzzy checkpoints.
+    * The last_checkpoint pointer stored in the log header contains the information about the last successful checkpoint.
+    * A fuzzy checkpoint begins with a special begin_checkpoint log specifying its start and ends with end_checkpoint log record, containing information about the dirty pages and the contents of a transaction table.
+    * Pages are flushed asynchronously and once this is done, the last_checkpoint record is updated with the LSN of the begin_checkpoint record and in case of a crash, the recovery process will start from there.
