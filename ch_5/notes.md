@@ -173,3 +173,44 @@
 
 * ARIES use LSNs for identifying log records, tracks pages modified by running transactions in the dirty page table, and uses physical redo, logical redo and fuzzy checkpointing.
 
+***Concurrency Control**
+* The transaction manager and lock manager work together to handle concurrency control. Categories:
+
+* *Optimistic Concurrency Control (OCC)*
+    * *Allows transactions to execute concurrent read and write operations*, and *determines whether or not the combined result of the execution is serializable*.
+    * Transactions do not block each other, maintain histories of their operations, and *check those histories for possible conflicts before commit*.
+    * If execution results in a conflict, *one of the conflicting transactions is aborted*.
+
+* *Multiversion Concurrency Control (MVCC)*
+    * Guarantees a consistent view of the DB at some point in the past identified by the timestamp by allowing *multiple timestamped versions of the record* to be present.
+    * It can be implemented using *validation techniques*, allowing only one of the updating or commiting txns to win, as well as with lockless techniques such as *timestamp orderingI*, or lock-based ones such as *2-phase locking*.
+
+* *Pessimistic (or Conservative) Concurrency Control (PCC)*
+    * There are both lock-based and nonlocking conservative methods, which differ in how they manage and grant access to shared resources.
+    * Non-locking approaches maintain read and write operation lists and restrict execution, depending on the *schedule of unfinished transactions*.
+    * Pessimitic schedules can result in a deadlock when multiple transactions wait for each other to release a lock in order to proceed.
+
+**Serializability**
+* *Schedule*: 
+    * A list of operations required to execute a set of transactions from the database-system perspective.
+    * It includes those that interact with the DB state such as read, write, commit or abort transactions. All other operations are considered to be side effect free as they don't have any impact on the DB state.
+
+* *Correct schedules* are logical equivalents to the original list of operations, but their parts can be executed in parallel or get reordered for optimization purposes as long as this does not violate ACID properties.
+
+* *Isolation Level*: 
+    * It specifies *how and when parts of the transaction can and should become visible to other transactions*.
+    * It describes the degree to which transactions are isolated from other concurrently executing transactions, and what kinds of *anomalies* can be encountered during execution.
+    * Achieving isolation comes at a cost: to prevent incomplete or temporary writes from propagating over transaction boundaries, we need additional coordination and synchronization which negatively impacts the performance.
+
+**Read And Write Anomalies**
+* *Read anomalies: dirty, non repeatable and phantom reads*
+
+* *Dirty read*
+    * Situation in which a txn can read uncommitted changes from other txns.
+    * Txn T2 may read a value from T1 while T1 may get aborted later.
+
+* *Nonrepeatable read*
+    * A txn queries the same row twice and gets the same result. One before and one after commit of another txn executing in parallel.
+
+* *Phantom reads*
+    * It is the same as nonrepeatable read but holds for range queries. 
